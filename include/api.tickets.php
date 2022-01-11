@@ -11,6 +11,7 @@ class TicketApiController extends ApiController {
     function getRequestStructure($format, $data=null) {
         $supported = array(
             "alert", "autorespond", "source", "topicId",
+            "response", "staffUsername", "isAgent","ticket_id",
             "attachments" => array("*" =>
                 array("name", "type", "data", "encoding", "size")
             ),
@@ -122,6 +123,69 @@ class TicketApiController extends ApiController {
 
         $this->response(201, $ticket->getNumber());
     }
+
+    // Start of: Additional from IPI
+
+    function reply($format) {
+        try{
+            # Check API Key
+            if(!($key=$this->requireApiKey()))
+                return $this->exerr(401, __('API key not authorized'));
+    
+                $data = $this->getRequest($format);
+                # Checks if ticket exist
+                $id = Ticket::getIdByNumber($data['ticket_id']);
+                if ($id <= 0)
+                    return $this->response(404, __("Ticket not found"));
+                
+                $ticket=Ticket::lookup($id);
+    
+                $errors = array();
+                # Checks if user or agent reply 
+                if($data['isAgent'] == true){
+                            $staff = Staff::lookup(array('username'=>$data['staffUserName']));
+                            if ($staff <= 0)
+                                return $this->exerr(404, __("Agent not found"));
+                            
+                            if (!$data['response'])
+                                return $this->exerr(404,'Message not found.');
+                            $data['staffId']= $staff -> getId();
+                            $data['poster'] = $staff;
+                            $data['reply-to'] = 'all';
+                            $alert = strcasecmp('none', $data['reply-to']);
+                            $response = $ticket->postReply($data , $errors , $alert );
+                } else {
+                            $thisclient=TicketUser::lookupByEmail($data['userEmail']);
+                            if ($thisclient <= 0)
+                                return $this->exerr(404, __("User not found")); 
+                            if(!$ticket->checkUserAccess($thisclient)) //double check perm again!
+                                return $this->exerr(404,'Access Denied. User and ticket did not match.'); 
+                            if (!$data['response'])
+                                return $this->exerr(404,'Message is required.');
+    
+                            $data['userId'] = $thisclient->getId();
+                            $data['poster'] = (string) $thisclient->getName();
+                            $data['message'] = $data['response'];
+                            
+                            $response = $ticket->postMessage($data , $errors); 
+                }
+                if(!$response)
+                return $this->exerr(500, __("Unable to reply to this ticket: unknown error"));
+                
+                $location_base = '/api/tickets/';
+                $result = array( 'status' => 'Ok', 'msg' => 'reply posted successfully'); 
+                $result_code=200;
+                $this->response($result_code, json_encode($result ),
+                            $contentType="application/json");
+            }
+             catch ( Throwable $e){
+                $msg = $e-> getMessage();
+                $result = array('tickets'=> array() ,'status' => 'FAILURE', 'msg' => $msg); $this->response(500, json_encode($result),
+                $contentType="application/json");
+            }
+        }
+    // End of: Additional from IPI
+
 
     /* private helper functions */
 
