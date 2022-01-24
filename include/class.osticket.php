@@ -544,7 +544,7 @@ class osTicket {
             return $ip;
 
         // Get chain of proxied ip addresses
-        echo "<script>console.log(header, ".$header.")<script>";
+        echo "<script>console.log(header, ".$header.")</script>";
         $ips = array_map('trim', explode(',', $_SERVER[$header]));
         // Add request IP to the chain
         $ips[] = $ip;
