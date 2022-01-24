@@ -127,7 +127,7 @@ define('TABLE_PREFIX','ost_');
 # http://en.wikipedia.org/wiki/X-Forwarded-For
 #
 
-define('TRUSTED_PROXIES', '13.75.34.162,23.100.95.31,13.88.220.46,207.46.156.0');
+define('TRUSTED_PROXIES', '13.75.34.162,23.100.95.31,13.88.220.46,207.46.156.0,13.70.7.68,13.70.40.131,52.175.56.14,65.52.175.113,23.101.11.245,52.229.201.1');
 
 
 # Option: LOCAL_NETWORKS (default: 127.0.0.0/24)
