@@ -174,16 +174,17 @@ class ApiController {
         # header
 
         if(!($key=$this->getApiKey()))
-            return $this->exerr(401, __('Valid API key required Server IP: '.json_encode($_SERVER['HTTP_CLIENT_IP'])));
+            return $this->exerr(401, __('Valid API key required Server IP: '.$_SERVER['HTTP_CLIENT_IP']));
         elseif (!$key->isActive() || $key->getIPAddr()!=$_SERVER['REMOTE_ADDR'])
-            return $this->exerr(401, __('API key not found/active or source IP not authorized'.json_encode($_SERVER['HTTP_CLIENT_IP'])));
+            return $this->exerr(401, __('API key not found/active or source IP not authorized'.$_SERVER['HTTP_CLIENT_IP']));
 
         return $key;
     }
 
     function getApiKey() {
+        $ip = explode(":", $_SERVER['HTTP_CLIENT_IP']);
         if (!$this->apikey && isset($_SERVER['HTTP_X_API_KEY']) && isset($_SERVER['REMOTE_ADDR']))
-            $this->apikey = API::lookupByKey($_SERVER['HTTP_X_API_KEY'], $_SERVER['REMOTE_ADDR']);
+            $this->apikey = API::lookupByKey($_SERVER['HTTP_X_API_KEY'], $ip[0]);
 
         return $this->apikey;
     }
