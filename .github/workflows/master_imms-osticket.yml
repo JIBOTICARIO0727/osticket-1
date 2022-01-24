@@ -58,3 +58,6 @@ jobs:
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_055DC417327640E88054DC3977EA93A0 }}
           package: .
+      - uses: geekyeggo/delete-artifact@v1
+        with:
+          name: node-app
