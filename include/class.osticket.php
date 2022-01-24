@@ -531,9 +531,10 @@ class osTicket {
      *
      */
     static function get_client_ip($header='HTTP_X_FORWARDED_FOR') {
-
         // Request IP
         $ip = $_SERVER['REMOTE_ADDR'];
+        echo "<script>console.log('header',".$ip.")</script>";
+        print_r($ip);
         // Trusted proxies.
         $proxies = self::getTrustedProxies();
         // Return current IP address if header is not set and
@@ -542,9 +543,7 @@ class osTicket {
                 || !$proxies
                 || !self::is_trusted_proxy($ip, $proxies))
             return $ip;
-
         // Get chain of proxied ip addresses
-        echo "<script>console.log('header',".$header.")</script>";
         $ips = array_map('trim', explode(',', $_SERVER[$header]));
         // Add request IP to the chain
         $ips[] = $ip;
