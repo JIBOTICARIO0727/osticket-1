@@ -175,7 +175,7 @@ class ApiController {
 
         if(!($key=$this->getApiKey()))
             return $this->exerr(401, __('Valid API key required Server IP: '.$_SERVER['HTTP_CLIENT_IP']));
-        elseif (!$key->isActive() || $key->getIPAddr()!=$_SERVER['REMOTE_ADDR'])
+        elseif (!$key->isActive() || $key->getIPAddr()!=$_SERVER['HTTP_CLIENT_IP'])
             return $this->exerr(401, __('API key not found/active or source IP not authorized'.$_SERVER['HTTP_CLIENT_IP']));
 
         return $key;
