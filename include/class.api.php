@@ -175,7 +175,7 @@ class ApiController {
         $ip = explode(":", $_SERVER['HTTP_CLIENT_IP']);
 
         if(!($key=$this->getApiKey()))
-            return $this->exerr(401, __('Valid API key required. Client IP: '.$ip[0]));
+            return $this->exerr(401, __('Valid API key required. Client IP: '.$ip[0])." APIKEY: ".$_SERVER['HTTP_X_API_KEY']);
         elseif (!$key->isActive() || $key->getIPAddr()!=$ip[0])
             return $this->exerr(401, __('API key not found/active or source IP not authorized. Client IP: '.$ip[0]));
 
