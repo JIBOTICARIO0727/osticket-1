@@ -2,6 +2,7 @@
 
 include_once INCLUDE_DIR.'class.api.php';
 include_once INCLUDE_DIR.'class.ticket.php';
+include_once INCLUDE_DIR.'class.file.php';
 
 class TicketApiController extends ApiController {
 
@@ -184,6 +185,51 @@ class TicketApiController extends ApiController {
                 $contentType="application/json");
             }
         }
+
+    function getEntryAttachment() {
+            try{
+                if(!($key=$this->requireApiKey()))
+                    return $this->exerr(401, __('API key not authorized'));
+                 
+                $ticket_entry_id = $_REQUEST['entryid'];
+                $ticket_number = $_REQUEST['ticket_id'];
+                
+                if (! ($ticket_number))
+                return $this->exerr(422, __('missing ticketNumber parameter '));
+                # Checks for valid ticket number    
+                 
+                if (!is_numeric($ticket_number))
+                    return $this->response(404, __("Invalid ticket number"));
+                # Checks for existing ticket with that number
+                $id = Ticket::getIdByNumber($ticket_number);
+                if ($id <= 0)
+                    return $this->response(404, __("Ticket not found"));
+                $ticket=Ticket::lookup($id);
+                $ctr=0;
+                foreach (AttachmentFile::objects()->filter(array(
+                    'attachments__thread_entry__id' => $ticket_entry_id
+                )) as $file) {
+                    $ctr += 1;
+                    $urls['attachments'.$ctr] = array(
+                        'download_url' => $file->getExternalDownloadUrl(['type' =>
+    'H']).'&auth='.$ticket->getuauthLink(),
+                        'filetype' => $file->type,
+                        'filename' => $file->name,
+                    );
+                }
+                $urls['count'] = $ctr;
+                $result_code=200;
+                $this->response($result_code, JsonDataEncoder::encode($urls),
+                    $contentType="application/json");
+                }
+                catch ( Throwable $e){
+                 
+                    $msg = $e-> getMessage();
+                    $result = array('ticket'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
+                    $this->response(500, json_encode($result),
+                        $contentType="application/json");
+                }
+            }
     // End of: Additional from IPI
 
 

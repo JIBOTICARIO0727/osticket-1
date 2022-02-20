@@ -464,6 +464,11 @@ implements RestrictedAccess, Threadable, Searchable {
     }
 
     // Getters
+
+    function getuauthLink(){
+        return $this->uauthLink;
+    }
+
     function getNumber() {
         return $this->number;
     }

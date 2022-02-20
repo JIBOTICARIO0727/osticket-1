@@ -25,6 +25,7 @@ require_once INCLUDE_DIR."class.dispatcher.php";
 $dispatcher = patterns('',
         url_post("^/tickets\.(?P<format>xml|json|email)$", array('api.tickets.php:TicketApiController','create')),
         url_post("^/postreply\.(?P<format>xml|json|email)$",array('api.tickets.php:TicketApiController','reply')),
+        url_get("^/attachment$", array('api.tickets.php:TicketApiController','getEntryAttachment')),
         url('^/tasks/', patterns('',
                 url_post("^cron$", array('api.cron.php:CronApiController', 'execute'))
          ))
