@@ -12,7 +12,7 @@ class TicketApiController extends ApiController {
     function getRequestStructure($format, $data=null) {
         $supported = array(
             "alert", "autorespond", "source", "topicId",
-            "response" ,"userEmail", "staffUsername", "staffUsername", "isAgent","ticket_id",
+            "response" ,"userEmail", "staffUsername", "isAgent","ticket_id",
             "attachments" => array("*" =>
                 array("name", "type", "data", "encoding", "size")
             ),
