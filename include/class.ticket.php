@@ -1371,8 +1371,8 @@ implements RestrictedAccess, Threadable, Searchable {
 
     // Start of: Additional from IPI
     function setUserAuthLink($uauthlink) {
-        $this->uauthlink = $uauthlink;
-        return $this->save();
+        $this->uauthlink = $uauthlink;
+        return $this->save();
     }
     // End of: Additional from IPI
 
