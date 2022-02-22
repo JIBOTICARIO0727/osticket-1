@@ -1368,6 +1368,14 @@ implements RestrictedAccess, Threadable, Searchable {
 
 
     /* -------------------- Setters --------------------- */
+
+    // Start of: Additional from IPI
+    function setUserAuthLink($uauthlink) {
+        $this->uauthlink = $uauthlink;
+        return $this->save();
+    }
+    // End of: Additional from IPI
+
     public function setFlag($flag, $val) {
 
         if ($val)
@@ -4398,6 +4406,11 @@ implements RestrictedAccess, Threadable, Searchable {
         $ticket->loadDynamicData(true);
 
         $dept = $ticket->getDept();
+
+        // Start of: Additional from IPI
+        $authuser=TicketUser::lookupByEmail($vars['email']);
+        $ticket->setUserAuthLink($ticket->getAuthToken($authuser));
+        // End of: Additional from IPI
 
         // Start tracking ticket lifecycle events (created should come first!)
         $ticket->logEvent('created', null, $thisstaff ?: $user);

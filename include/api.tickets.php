@@ -131,105 +131,120 @@ class TicketApiController extends ApiController {
         try{
             # Check API Key
             if(!($key=$this->requireApiKey()))
-                return $this->exerr(401, __('API key not authorized'));
-    
-                $data = $this->getRequest($format);
-                # Checks if ticket exist
-                $id = Ticket::getIdByNumber($data['ticket_id']);
-                if ($id <= 0)
-                    return $this->response(404, __("Ticket not found"));
+            return $this->exerr(401, __('API key not authorized'));
+
+            $data = $this->getRequest($format);
+
+            # Checks required fields
+            if (!$data['response'])
+                    return $this->exerr(400,__('Missing response parameter.'));
+
+            if (!$data['ticket_id'])
+                return $this->exerr(400, __('Missing ticket id'));
+
+            # Checks if ticket exist
+            $id = Ticket::getIdByNumber($data['ticket_id']);
+            if ($id <= 0)
+                return $this->response(404, __('Ticket not found'));
+
+            $ticket=Ticket::lookup($id);
+            $errors = array();
+
+            if (!$data['isAgent'])
+                return $this->exerr(400, __('Missing is agent parameter.'));
+
+            # Checks if user or agent reply    
+            if($data['isAgent'] == true){
+                if (!$data['staffUserName'])
+                    return $this->exerr(400, __('Missing Staff username parameter'));
+
+                $staff = Staff::lookup(array('username'=>$data['staffUserName']));
+                if ($staff <= 0)
+                    return $this->exerr(404, __("Agent not found"));
+
+                $data['staffId']= $staff -> getId();
+                $data['poster'] = $staff;
+                $data['reply-to'] = 'all'; 
+                $alert = strcasecmp('none', $data['reply-to']);
+                $response = $ticket->postReply($data , $errors , $alert );
+            } else { 
+                if (!$data['userEmail'])
+                    return $this->exerr(400, __("Missing user email parameter"));
+
+                $thisclient=TicketUser::lookupByEmail($data['userEmail']);
+                if ($thisclient <= 0)
+                    return $this->exerr(404, __("User not found"));
+
+                if(!$ticket->checkUserAccess($thisclient)) //double check perm again!
+                    return $this->exerr(401,__('Access Denied. User and ticket did not match.'));
+                  
+                $data['userId'] = $thisclient->getId();
+                $data['poster'] = (string) $thisclient->getName();
+                $data['message'] = $data['response'];
                 
-                $ticket=Ticket::lookup($id);
-    
-                $errors = array();
-                # Checks if user or agent reply 
-                if($data['isAgent'] == true){
-                            $staff = Staff::lookup(array('username'=>$data['staffUserName']));
-                            if ($staff <= 0)
-                                return $this->exerr(404, __("Agent not found"));
-                            
-                            if (!$data['response'])
-                                return $this->exerr(404,'Message not found.');
-                            $data['staffId']= $staff -> getId();
-                            $data['poster'] = $staff;
-                            $data['reply-to'] = 'all';
-                            $alert = strcasecmp('none', $data['reply-to']);
-                            $response = $ticket->postReply($data , $errors , $alert );
-                } else {
-                            $thisclient=TicketUser::lookupByEmail($data['userEmail']);
-                            if ($thisclient <= 0)
-                                return $this->exerr(404, __("User not found")); 
-                            if(!$ticket->checkUserAccess($thisclient)) //double check perm again!
-                                return $this->exerr(404,'Access Denied. User and ticket did not match.'); 
-                            if (!$data['response'])
-                                return $this->exerr(404,'Message is required.');
-    
-                            $data['userId'] = $thisclient->getId();
-                            $data['poster'] = (string) $thisclient->getName();
-                            $data['message'] = $data['response'];
-                            
-                            $response = $ticket->postMessage($data , $errors); 
-                }
-                if(!$response)
-                return $this->exerr(500, __("Unable to reply to this ticket: unknown error"));
-                
-                $location_base = '/api/tickets/';
-                $result = array( 'status' => 'Ok', 'msg' => 'reply posted successfully'); 
-                $result_code=200;
-                $this->response($result_code, json_encode($result ),
-                            $contentType="application/json");
-            }
-             catch ( Throwable $e){
-                $msg = $e-> getMessage();
-                $result = array('tickets'=> array() ,'status' => 'FAILURE', 'msg' => $msg); $this->response(500, json_encode($result),
-                $contentType="application/json");
-            }
+                $response = $ticket->postMessage($data , $errors);
+          }
+
+          if(!$response)
+            return $this->exerr(500, __("Unable to reply to this ticket: unknown error"));
+
+            $location_base = '/api/tickets/';
+            $result = array( 'status' => 'Ok', 'msg' => 'reply posted successfully');
+            $result_code=200;
+            $this->response($result_code, json_encode($result ),$contentType="application/json");
         }
+        catch ( Throwable $e){
+          $msg = $e-> getMessage();
+          $result = array('tickets'=> array() ,'status' => 'FAILURE', 'msg' => $msg);
+          $this->response(500, json_encode($result),$contentType="application/json");
+        }
+    }
 
     function getEntryAttachment() {
-            try{
-                if(!($key=$this->requireApiKey()))
-                    return $this->exerr(401, __('API key not authorized'));
-                 
-                $ticket_entry_id = $_REQUEST['entryid'];
-                $ticket_number = $_REQUEST['ticket_id'];
-                
-                if (! ($ticket_number))
-                return $this->exerr(422, __('missing ticketNumber parameter '));
-                # Checks for valid ticket number    
-                 
-                if (!is_numeric($ticket_number))
-                    return $this->response(404, __("Invalid ticket number"));
-                # Checks for existing ticket with that number
-                $id = Ticket::getIdByNumber($ticket_number);
-                if ($id <= 0)
-                    return $this->response(404, __("Ticket not found"));
-                $ticket=Ticket::lookup($id);
-                $ctr=0;
-                foreach (AttachmentFile::objects()->filter(array(
-                    'attachments__thread_entry__id' => $ticket_entry_id
-                )) as $file) {
-                    $ctr += 1;
-                    $urls['attachments'.$ctr] = array(
-                        'download_url' => $file->getExternalDownloadUrl(['type' =>
-    'H']).'&auth='.$ticket->getuauthLink(),
-                        'filetype' => $file->type,
-                        'filename' => $file->name,
+        try{
+              if(!($key=$this->requireApiKey()))
+                return $this->exerr(401, __('API key not authorized'));
+
+              $ticket_entry_id = $_REQUEST['entryid'];
+              $ticket_number = $_REQUEST['ticket_id'];
+              
+              if (!($ticket_number))
+                return $this->exerr(400, __('Missing ticket id parameter'));
+
+              if (!($ticket_entry_id))
+                return $this->exerr(400, __('Missing ticket entry id parameter'));
+
+              # Checks for valid ticket number
+              if (!is_numeric($ticket_number))
+                return $this->response(422, __('Invalid ticket number'));
+
+              # Checks for existing ticket with that number
+              $id = Ticket::getIdByNumber($ticket_number);
+              if ($id <= 0)
+                return $this->response(404, __('Ticket not found'));
+
+              $ticket=Ticket::lookup($id);
+              $ctr=0;
+              foreach (AttachmentFile::objects()->filter(array(
+                'attachments__thread_entry__id' => $ticket_entry_id
+              )) as $file) {
+                $ctr += 1;
+                $urls['attachments'.$ctr] = array(
+                      'download_url' => $file->getExternalDownloadUrl(['type' => 'H']).'&auth='.$ticket->getuauthLink(),
+                      'filetype' => $file->type,
+                      'filename' => $file->name,
                     );
-                }
-                $urls['count'] = $ctr;
-                $result_code=200;
-                $this->response($result_code, JsonDataEncoder::encode($urls),
-                    $contentType="application/json");
-                }
-                catch ( Throwable $e){
-                 
-                    $msg = $e-> getMessage();
-                    $result = array('ticket'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
-                    $this->response(500, json_encode($result),
-                        $contentType="application/json");
-                }
-            }
+                  }
+                  $urls['count'] = $ctr;
+                  $result_code=200;
+                  $this->response($result_code, JsonDataEncoder::encode($urls),$contentType="application/json");
+           }
+           catch ( Throwable $e){
+               $msg = $e-> getMessage();
+               $result = array('ticket'=> array() ,'status_code' => 'FAILURE', 'status_msg' => $msg);
+               $this->response(500, json_encode($result),$contentType="application/json");
+           }
+    }
     // End of: Additional from IPI
 
 
