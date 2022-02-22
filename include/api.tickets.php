@@ -12,7 +12,7 @@ class TicketApiController extends ApiController {
     function getRequestStructure($format, $data=null) {
         $supported = array(
             "alert", "autorespond", "source", "topicId",
-            "response", "staffUsername", "isAgent","ticket_id",
+            "response" ,"userEmail", "staffUsername", "staffUsername", "isAgent","ticket_id",
             "attachments" => array("*" =>
                 array("name", "type", "data", "encoding", "size")
             ),
@@ -131,13 +131,13 @@ class TicketApiController extends ApiController {
         try{
             # Check API Key
             if(!($key=$this->requireApiKey()))
-            return $this->exerr(401, __('API key not authorized'));
+                return $this->exerr(401, __('API key not authorized'));
 
             $data = $this->getRequest($format);
 
             # Checks required fields
             if (!$data['response'])
-                    return $this->exerr(400,__('Missing response parameter.'));
+                return $this->exerr(400,__('Missing response parameter.'));
 
             if (!$data['ticket_id'])
                 return $this->exerr(400, __('Missing ticket id'));
