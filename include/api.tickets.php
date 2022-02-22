@@ -205,7 +205,7 @@ class TicketApiController extends ApiController {
               if(!($key=$this->requireApiKey()))
                 return $this->exerr(401, __('API key not authorized'));
 
-              $ticket_entry_id = $_REQUEST['entryid'];
+              $ticket_entry_id = $_REQUEST['entry_id'];
               $ticket_number = $_REQUEST['ticket_id'];
               
               if (!($ticket_number))
